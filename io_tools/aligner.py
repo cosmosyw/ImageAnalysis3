@@ -1,7 +1,7 @@
 import numpy as np
 
 def spAligner_2_chr2homologList(cell_data_df, codebook, 
-                               info_names=['rna_experiment','fov_id','cell_id','subclass','uid'],
+                               info_names=['rna_experiment','fov_id','cell_id','subclass','uid', 'genotype'],
                                fill_blank=True):
     """Function to load spAligner result"""
     # init

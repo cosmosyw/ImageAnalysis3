@@ -24,7 +24,8 @@ class SpotDecoder():
                  codebook:pd.DataFrame=None, # Codebook, ReadoutName+binaryTable
                  readoutDf:pd.DataFrame=None, # Bit+ReadoutName
                  saveFile:str=None, # save filename
-                 searchRadius:float=default_radius,
+                 searchRadiusPair:float=default_radius,
+                 searchRadiusTuple:float=default_radius,
                  searchEps:float=default_eps,
                  autoRun:bool=True,
                  preLoad:bool=True,
@@ -41,7 +42,8 @@ class SpotDecoder():
         self.readoutDf = readoutDf
         self.saveFile = saveFile
         # parameters
-        self.search_radius = searchRadius
+        self.search_radius_pair = searchRadiusPair
+        self.search_radius_tuple = searchRadiusTuple
         self.search_eps = searchEps
         self.overwrite = overwrite
         self.verbose = verbose
@@ -127,7 +129,7 @@ class SpotDecoder():
     # search spot_pairs by KDtree
     def _search_candidate_pairs(self,):
         if self.verbose:
-            print(f"- Searching for spot-pairs within {self.search_radius}nm.")
+            print(f"- Searching for spot-pairs within {self.search_radius_pair}nm.")
         if hasattr(self, 'candSpotPairInds_list') and hasattr(self, 'candSpotPair_list') and not self.overwrite:
             return self.candSpotPair_list
         else:
@@ -140,7 +142,7 @@ class SpotDecoder():
             if self.verbose:
                 print(f"-- find candidate pairs by KDTree")
             self.kdtree = KDTree(_cand_positions)
-        _candSpotPairInds_list = list(self.kdtree.query_pairs(self.search_radius, eps=self.search_eps))
+        _candSpotPairInds_list = list(self.kdtree.query_pairs(self.search_radius_pair, eps=self.search_eps))
         # loop through all pairs
         if self.verbose:
             print(f"-- filter candidate pairs by codebook")
@@ -163,7 +165,7 @@ class SpotDecoder():
                             _errorCorrection=True):
         """Function to select spot tuples given self.candSpotPair_list found previously"""
         if self.verbose:
-            print(f"- Select spot_groups from candidate pairs with radius:{self.search_radius}, max_usage={_maxSpotUsage}")
+            print(f"- Select spot_groups from candidate pairs with radius:{self.search_radius_tuple}, max_usage={_maxSpotUsage}")
         # initialize _spot_usage and tuples
         _spotUsage = np.zeros(len(self.candSpots))
         if hasattr(self, 'spotGroups') and not self.overwrite:
@@ -209,7 +211,7 @@ class SpotDecoder():
                 continue
             # search neighborhood whether the 3rd point exist
             _nb_spot_inds = self.kdtree.query_ball_point(_pair.centroid_spot().to_positions()[0],
-                                                         self.search_radius, eps=self.search_eps)
+                                                         self.search_radius_tuple, eps=self.search_eps)
             # skip for now if no neighboring spots detected
             if len(_nb_spot_inds) == 0:
                 #print("--- no neighbors detected, skip")
@@ -296,8 +298,10 @@ class SpotDecoder():
             if 'bits' in _g.keys():
                 self.bits = _g['bits'][:]
             # try loading attrs
-            if 'search_radius' in _g.attrs.keys():
-                self.search_radius = _g.attrs['search_radius']
+            if 'search_radius_pair' in _g.attrs.keys():
+                self.search_radius_pair = _g.attrs['search_radius_pair']
+            if 'search_radius_tuple' in _g.attrs.keys():
+                self.search_radius_tuple = _g.attrs['search_radius_tuple']
             if 'search_eps' in _g.attrs.keys():
                 self.search_eps = _g.attrs['search_eps']
         # try loading dataframes
@@ -342,13 +346,21 @@ class SpotDecoder():
                     print(f"-- skip saving bits")
             ## Attrs:
             # search_radius
-            if 'search_radius' not in _g.attrs.keys() or self.overwrite:
+            if 'search_radius_pair' not in _g.attrs.keys() or self.overwrite:
                 if self.verbose:            
-                    print(f"-- save search_radius to attrs")
-                _g.attrs['search_radius'] = self.search_radius
+                    print(f"-- save search_radius_pair to attrs")
+                _g.attrs['search_radius_pair'] = self.search_radius_pair
             else:
                 if self.verbose:
-                    print(f"-- skip saving search_radius")
+                    print(f"-- skip saving search_radius_pair")
+            # search_radius
+            if 'search_radius_tuple' not in _g.attrs.keys() or self.overwrite:
+                if self.verbose:            
+                    print(f"-- save search_radius_tuple to attrs")
+                _g.attrs['search_radius_tuple'] = self.search_radius_tuple
+            else:
+                if self.verbose:
+                    print(f"-- skip saving search_radius_pair")
             # search_eps
             if 'search_eps' not in _g.attrs.keys() or self.overwrite:
                 if self.verbose:            
@@ -724,7 +736,8 @@ def batch_process_SpotDecoder(
     codebook,
     readoutDf,
     saveFile,
-    searchRadius=default_radius,
+    searchRadiusPair=default_radius,
+    searchRadiusTuple=default_radius,
     searchEps=default_eps,
     overwrite=False,
     verbose=True,
@@ -735,7 +748,7 @@ def batch_process_SpotDecoder(
         codebook_name=codebook_name, candSpotDf=candSpotDf,
         codebook=codebook, readoutDf=readoutDf,
         saveFile=saveFile, 
-        searchRadius=searchRadius, searchEps=searchEps,
+        searchRadiusPair=searchRadiusPair, searchRadiusTuple=searchRadiusTuple, searchEps=searchEps,
         autoRun=True, preLoad=(overwrite==False),
         overwrite=overwrite, verbose=verbose,
     )
