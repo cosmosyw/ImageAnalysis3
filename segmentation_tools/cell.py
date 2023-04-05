@@ -9,6 +9,7 @@ import h5py
 import json
 import copy 
 from scipy.ndimage import grey_dilation
+from scipy.stats import mode
 
 # internal function
 from ..figure_tools.plot_segmentation import plot_segmentation
@@ -368,7 +369,8 @@ class Align_Segmentation():
     """
     def __init__(self, 
         rna_feature_file:str, 
-        rna_dapi_file:str, 
+        rna_dapi_file:str,
+        dna_cellposesegment:str, 
         dna_save_file:str,
         rna_microscope_file:str,
         dna_microscope_file:str,
@@ -383,6 +385,8 @@ class Align_Segmentation():
         self.dna_save_file = dna_save_file
         self.rna_microscope_file = rna_microscope_file
         self.dna_microscope_file = dna_microscope_file
+        if os.path.exists(dna_cellposesegment):
+            self.dna_cellposesegment = np.load(dna_cellposesegment)
         self.rotation_mat = rotation_mat
         # params
         self.parameters = {_k:_v for _k,_v in default_alignment_params.items()}
@@ -472,6 +476,9 @@ class Align_Segmentation():
         # generate full
         _full_rna_mask = interploate_z_masks(_rna_mask, _rna_Zcoords, 
                                              target_dna_Zcoords, verbose=self.verbose)
+        _full_dna_segment = interploate_z_masks(self.dna_cellposesegment, _rna_Zcoords, 
+                                             target_dna_Zcoords, verbose=self.verbose)
+        
         # load DNA
         _dna_dapi, _fov_id, _fov_name = self._load_dna_info(self.dna_save_file, _dna_mparam)
         # decide rotation matrix
@@ -483,18 +490,38 @@ class Align_Segmentation():
             _rna_dapi, _dna_dapi, self.rotation_mat, 
             label_before=_full_rna_mask, 
             return_new_dapi=True, verbose=self.verbose)
-        # Do dialation
+        
+        # convert the id in the label matrix of the cell pose segment
+        segment_cell_id_conversion = {} # the conversion is from _full_dna_segment to _dna_mask
+        max_cell_id = np.amax(_full_dna_segment)
+        coors_segment = []
+        for cell_id in range(1, max_cell_id+1):
+            _coords = np.where(_full_dna_segment==cell_id)
+            ids_in_mask = _dna_mask[_coords]
+            coors_segment.append(_coords)
+            _mode, _count = mode(ids_in_mask)
+            if (_count>=len(ids_in_mask)/2) and (_count>=len(_coords[0])/2):
+                segment_cell_id_conversion[cell_id] = _mode[0]
+            else:
+                segment_cell_id_conversion[cell_id] = 0
+        for i, cell_id in enumerate(range(1, max_cell_id+1)):
+            _full_dna_segment[coors_segment[i]] = segment_cell_id_conversion[cell_id]
+        
+        _dna_mask = _full_dna_segment
+        del(_full_dna_segment)
+        
         if 'dialation_size' in self.parameters:
             _dna_mask = grey_dilation(_dna_mask, size=self.parameters['dialation_size'])
         _dna_mask = np.clip(_dna_mask, np.iinfo(save_dtype).min, np.iinfo(save_dtype).max,)
         _dna_mask = _dna_mask.astype(save_dtype)
+
         # add to attribute
         self.dna_mask = _dna_mask
         self.fov_id = _fov_id
         self.fov_name = _fov_name
         self.fovcell_2_uid = _fovcell_2_uid
         if self.debug:
-            return _dna_mask, _full_rna_mask, _rna_dapi, _rot_dna_dapi, _dna_dapi
+            return _dna_mask, _full_rna_mask, _rna_dapi, _rot_dna_dapi, _dna_dapi, _full_dna_segment
         else:
             return _dna_mask,
 
@@ -659,6 +686,7 @@ def _batch_align_segmentation(
     target_dna_Zcoords:np.ndarray,
     rna_feature_file:str,
     rna_dapi_file:str,
+    dna_cellposesegment:str,
     dna_save_file:str,
     rna_microscope_file:str,
     dna_microscope_file:str,
@@ -679,6 +707,7 @@ def _batch_align_segmentation(
         rna_feature_file=rna_feature_file, 
         rna_dapi_file=rna_dapi_file,
         dna_save_file=dna_save_file,
+        dna_cellposesegment=dna_cellposesegment,
         rna_microscope_file=rna_microscope_file, 
         dna_microscope_file=dna_microscope_file,
         rotation_mat=rotation_mat,

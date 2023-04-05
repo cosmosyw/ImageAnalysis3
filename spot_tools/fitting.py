@@ -179,7 +179,7 @@ def fit_fov_image(im, channel, seeds=None,
                   fitting_args={}, 
                   remove_boundary_points=True, verbose=True):
     """Function to merge seeding and fitting for the whole fov image"""
-
+    print('use local version of fit_fov_image')
     ## check inputs
     th_seed = float(th_seed)
     if verbose:

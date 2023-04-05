@@ -1078,7 +1078,7 @@ class Field_of_View():
 
             # append if any channels selected
             if len(_sel_channels) > 0:
-                _args = (_dax_filename, _sel_channels, 
+                _args = (_dax_filename, _sel_channels, self.shared_parameters['spot_seeding_th'],
                         self.save_filename, 
                         _data_type, _reg_ids, 
                         _drift_reference,

@@ -33,10 +33,10 @@ def get_folders(data_folder, feature='H', verbose=True):
         raise FileNotFoundError(f"data_folder:{data_folder} not exist.")
 
     folders = [folder for folder in glob.glob(data_folder+os.sep+'*') if os.path.basename(folder)[:len(feature)]==feature] # get folders start with 'H'
-    #for __name in sorted(__color_dic.keys(), key=lambda _v:int( re.split(r'^H([0-9]+)[RQBUGCMP](.*)', _v)[1] ) ):
+    #for __name in sorted(__color_dic.keys(), key=lambda _v:int( re.split(r'^H([0-9]+)[RQBUGCMPL](.*)', _v)[1] ) ):
     # try sort folder by hyb
     try:
-        folders = list(sorted(folders, key=lambda _path:int(re.split(r'^H([0-9]+)[RQBUGCMP](.*)', os.path.basename(_path) )[1])  ) ) 
+        folders = list(sorted(folders, key=lambda _path:int(re.split(r'^H([0-9]+)[RQBUGCMPL](.*)', os.path.basename(_path) )[1])  ) ) 
     except:
         pass
     

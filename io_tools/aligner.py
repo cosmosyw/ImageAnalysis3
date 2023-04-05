@@ -1,9 +1,12 @@
 import numpy as np
 
 def spAligner_2_chr2homologList(cell_data_df, codebook, 
-                               info_names=['rna_experiment','fov_id','cell_id','subclass','uid', 'genotype'],
+                               info_names=['rna_experiment','fov_id','cell_id','subclass','uid'],
                                fill_blank=True):
     """Function to load spAligner result"""
+    
+    if 'MeCP2_genotype' in cell_data_df.columns:
+        info_names.append('MeCP2_genotype')
     # init
     chr_2_homologList = {}
     # loop through chrs 

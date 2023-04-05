@@ -1,10 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 plt.rc('font', family='serif')
 plt.rc('font', serif='Arial')
 import matplotlib
 matplotlib.rcParams['pdf.fonttype'] = 42
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.patches import Rectangle
 
 #
 from . import _dpi, _single_col_width, _double_col_width, _single_row_height, _ref_bar_length, _ticklabel_size, _ticklabel_width, _font_size
@@ -99,6 +101,74 @@ def plot_spot_stats(_spot_groups, _spot_usage, _max_usage=5, codebook=None,
             if verbose:
                 print(f"- Save spot_stats iamage to file: {save_filename}")
             fig.savefig(save_filename)
+    if show_image:
+        fig.show()
+        return axes
+    else:
+        plt.close(fig)
+        return None
+
+def plot_relabel_spot_stats(_spot_groups, _spot_usage, _max_usage=5, codebook=None,
+                    save=True, save_filename=None,
+                    show_image=True, verbose=True,
+                    ):
+    """Plot spot_group stats in decoder groups"""
+    fig, axes = plt.subplot_mosaic("ABC;DDD", figsize=(6,4), dpi=150)
+    # Plot spot usage
+    axes['A'].hist(_spot_usage, bins=np.arange(_max_usage), width=0.8, color='r')
+    axes['A'].set_title("Usage of each spot", fontsize=8, pad=3)
+    axes['A'].set_xticks(np.arange(0.5, _max_usage+0.5))
+    axes['A'].set_xticklabels(np.arange(_max_usage))
+    # Plot spot number in groups
+    axes['B'].hist([len(_g.spots) for _g in _spot_groups], bins=np.arange(_max_usage), width=0.8, color='y')
+    axes['B'].set_title("Spot Num. in Groups", fontsize=8, pad=3)
+    axes['B'].set_xticks(np.arange(0.5, _max_usage+0.5))
+    axes['B'].set_xticklabels(np.arange(_max_usage))
+
+    # Plot number of decoded spots for each region
+    regions = codebook.sort_values('chr_order').id.values
+    _decoded_counts = np.zeros(len(regions))
+    for _g in _spot_groups:
+        _decoded_counts[regions==_g.tuple_id] += 1
+    axes['C'].hist(_decoded_counts, bins=np.arange(0,np.max(_decoded_counts)+1), width=1, color='b')
+    axes['C'].set_title("Decoded Num. in regions", fontsize=8, pad=3)
+    axes['C'].set_xticks(np.arange(0.5, np.max(_decoded_counts)+1,2))
+    axes['C'].set_xticklabels(np.arange(0,np.max(_decoded_counts)+1,2).astype(np.int32))
+    # total figure
+    fig.subplots_adjust(wspace=0.3, top=0.80, bottom=0.12)
+    fig.suptitle(f"{len(_spot_usage)} spots, {len(_spot_groups)} groups", 
+                 fontsize=10, y=0.97)
+
+    def get_color(count):
+        if count>=3:
+            return 'black'
+        elif count==2:
+            return 'green'
+        elif count==1:
+            return 'blue'
+    
+    #fig, axes = plt.subplots(1,1, figsize=(6,2), dpi=150)
+    width = 1/len(regions)
+    for i in range(len(regions)):
+        axes['D'].add_patch(Rectangle((i*width, 0.0), width, _decoded_counts[i], color=get_color(_decoded_counts[i]), alpha=1))
+    axes['D'].set_ylim((0,3))
+
+    # save 
+    if save:
+        if save_filename is not None:
+            if verbose:
+                print(f"- Save spot_stats iamage to file: {save_filename}")
+            fig.savefig(save_filename)
+    '''
+    save_filename_2_base = os.path.basename(save_filename).split('.')[0] + '_chr_order.png'
+    save_filename_2 = os.path.join(os.path.dirname(save_filename), save_filename_2_base)
+     # save 
+    if save:
+        if save_filename_2 is not None:
+            if verbose:
+                print(f"- Save spot in chr order image to file: {save_filename_2}")
+            fig.savefig(save_filename_2)
+    '''
     if show_image:
         fig.show()
         return axes

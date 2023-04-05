@@ -8,9 +8,9 @@ from ..io_tools.load import correct_fov_image
 from ..spot_tools.fitting import fit_fov_image, get_centers
 
 Channel_2_SeedTh = {
-    '750':700,
-    '647':800,
-    '561':450,
+    '750':1000,
+    '647':1000,
+    '561':800,
 }
 
 ## Process managing
@@ -54,7 +54,7 @@ def _color_dic_stat(color_dic, channels, _type_dic=_allowed_kwds):
     return _include_types
 
 
-def batch_process_image_to_spots(dax_filename, sel_channels, 
+def batch_process_image_to_spots(dax_filename, sel_channels, seeding_threshold,
                                  save_filename, 
                                  data_type, region_ids,
                                  ref_filename, 
@@ -105,7 +105,7 @@ def batch_process_image_to_spots(dax_filename, sel_channels,
         pass
     else:
         raise TypeError(f"ref_filename should be np.ndarray or string of path, but {type(ref_filename)} is given")
-    # region ids
+    # region ids 
     if len(region_ids) != len(sel_channels):
         raise ValueError(f"Wrong input region_ids:{region_ids}, should of same length as sel_channels:{sel_channels}.")
     region_ids = [int(_id) for _id in region_ids] # convert to ints
@@ -259,7 +259,7 @@ def batch_process_image_to_spots(dax_filename, sel_channels,
         # get threshold
         
         for _ich, (_im, _ch) in enumerate(zip(_sel_ims, sel_channels)):
-            fitting_args['th_seed'] = Channel_2_SeedTh[str(_ch)]
+            fitting_args['th_seed'] = seeding_threshold[str(_ch)]
 
             _raw_spots = fit_fov_image(
                 _im, _ch, verbose=verbose, 

@@ -924,7 +924,7 @@ class DaxProcesser():
             _note = f"-- warp image"
             # 2. apply drift if necessary
             if not _finish_warp:
-                _coords = _coords - _drift[:, np.newaxis,np.newaxis,np.newaxis]
+                _coords = _coords - _drift[:, np.newaxis,np.newaxis,np.newaxis] # should this be + ??
                 _note += f' with drift:{_drift}'
                 # update flag
                 self.correction_log[_ch]['corr_drift'] = True
